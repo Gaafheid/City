@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+:root {
+  --font-sans: var(--font-geist);
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Ensure MapLibre GL canvas fills its container */
+.maplibregl-map {
+  position: absolute;
+  inset: 0;
+}
+
+/* Push map attribution out of the way on mobile */
+.maplibregl-ctrl-bottom-right {
+  bottom: 60px !important;
+}
