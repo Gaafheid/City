@@ -27,6 +27,28 @@ const wasmStubPlugin = {
   },
 };
 
+// next/dist/server/node-environment.js (and its extensions) monkey-patch
+// Math.random, Date, and node:crypto for the experimental cacheComponents
+// feature. Those patches call require('node:crypto') inside CJS modules.
+// In an ESM Cloudflare Worker there is no global require, so esbuild's
+// __require shim throws "Dynamic require of node:crypto is not supported".
+// We stub the whole node-environment tree (we don't use cacheComponents)
+// and set up the only thing we actually need (AsyncLocalStorage) in the banner.
+const nodeEnvironmentStubPlugin = {
+  name: 'node-environment-stub',
+  setup(build) {
+    build.onResolve({ filter: /node-environment/ }, (args) => ({
+      path: args.path,
+      namespace: 'node-env-stub',
+    }));
+    build.onLoad({ filter: /.*/, namespace: 'node-env-stub' }, () => ({
+      // Return a CJS-compatible no-op so esbuild's module wrapper is happy.
+      contents: '"use strict"; Object.defineProperty(exports, "__esModule", { value: true });',
+      loader: 'js',
+    }));
+  },
+};
+
 esbuild.build({
   entryPoints: [workerSrc],
   bundle: true,
@@ -42,15 +64,15 @@ esbuild.build({
     'cloudflare:*',
     '__STATIC_CONTENT_MANIFEST',
   ],
-  // Next.js CJS modules (e.g. node-environment-extensions/node-crypto.js) call
-  // require('node:crypto') at runtime. In an ESM Cloudflare Worker there is no
-  // global require, so esbuild's __require shim throws "Dynamic require of X is
-  // not supported". Injecting createRequire makes require available so those
-  // shims resolve the Node built-ins that nodejs_compat provides.
+  // node-environment.js is stubbed above, so we must set up AsyncLocalStorage
+  // ourselves. React server components need it as globalThis.AsyncLocalStorage.
   banner: {
-    js: `import { createRequire as __createRequire } from 'node:module';\nconst require = __createRequire(import.meta.url);\n`,
+    js: [
+      `import { AsyncLocalStorage as __AsyncLocalStorage } from 'node:async_hooks';`,
+      `if (typeof globalThis.AsyncLocalStorage !== 'function') { globalThis.AsyncLocalStorage = __AsyncLocalStorage; }`,
+    ].join('\n') + '\n',
   },
-  plugins: [wasmStubPlugin],
+  plugins: [wasmStubPlugin, nodeEnvironmentStubPlugin],
   target: 'es2022',
   minify: false,
 }).then(() => {
