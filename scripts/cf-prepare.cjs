@@ -1,25 +1,31 @@
-// Prepares .open-next/assets/ for Cloudflare Pages deployment.
-// Copies worker.js → assets/_worker.js and all worker dependency
-// directories into assets/ so relative imports resolve correctly.
-const { cpSync, copyFileSync, readdirSync, statSync } = require('fs');
-const { join } = require('path');
+// Bundles .open-next/worker.js + all its dependencies into a single
+// .open-next/assets/_worker.js so Cloudflare Pages gets one self-contained
+// file and doesn't need to re-bundle (which fails for multi-file workers).
+const esbuild = require('esbuild');
+const { existsSync } = require('fs');
 
-const src = '.open-next';
-const dest = '.open-next/assets';
+const workerSrc = '.open-next/worker.js';
+const workerDest = '.open-next/assets/_worker.js';
 
-copyFileSync(join(src, 'worker.js'), join(dest, '_worker.js'));
-console.log('✓ Copied worker.js → assets/_worker.js');
-
-for (const entry of readdirSync(src)) {
-  if (entry === 'assets' || entry === 'worker.js') continue;
-  const srcPath = join(src, entry);
-  const destPath = join(dest, entry);
-  if (statSync(srcPath).isDirectory()) {
-    cpSync(srcPath, destPath, { recursive: true });
-  } else {
-    copyFileSync(srcPath, destPath);
-  }
-  console.log(`✓ Copied ${entry}`);
+if (!existsSync(workerSrc)) {
+  console.error('worker.js not found — did opennextjs-cloudflare build run?');
+  process.exit(1);
 }
 
-console.log('✓ Done — assets ready for Cloudflare Pages');
+esbuild.build({
+  entryPoints: [workerSrc],
+  bundle: true,
+  outfile: workerDest,
+  format: 'esm',
+  platform: 'browser',
+  conditions: ['workerd', 'worker', 'browser'],
+  // Cloudflare builtins — available at runtime, must not be bundled
+  external: ['cloudflare:*', 'node:*', '__STATIC_CONTENT_MANIFEST'],
+  target: 'es2022',
+  minify: false,
+}).then(() => {
+  console.log('✓ Worker bundled → .open-next/assets/_worker.js');
+}).catch((err) => {
+  console.error('Bundle failed:', err.message);
+  process.exit(1);
+});
