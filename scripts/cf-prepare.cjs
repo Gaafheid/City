@@ -1,6 +1,5 @@
-// Bundles .open-next/worker.js + all its dependencies into a single
-// .open-next/assets/_worker.js so Cloudflare Pages gets one self-contained
-// file and doesn't need to re-bundle (which fails for multi-file workers).
+// Bundles .open-next/worker.js into a single self-contained
+// .open-next/assets/_worker.js for Cloudflare Pages Advanced Mode.
 const esbuild = require('esbuild');
 const { existsSync } = require('fs');
 
@@ -12,15 +11,38 @@ if (!existsSync(workerSrc)) {
   process.exit(1);
 }
 
+// Next.js bundles @vercel/og which imports .wasm?module files.
+// We don't use OG image generation so stub these out.
+const wasmStubPlugin = {
+  name: 'wasm-stub',
+  setup(build) {
+    build.onResolve({ filter: /\.wasm(\?.*)?$/ }, (args) => ({
+      path: args.path,
+      namespace: 'wasm-stub',
+    }));
+    build.onLoad({ filter: /.*/, namespace: 'wasm-stub' }, () => ({
+      contents: 'module.exports = undefined;',
+      loader: 'js',
+    }));
+  },
+};
+
 esbuild.build({
   entryPoints: [workerSrc],
   bundle: true,
   outfile: workerDest,
   format: 'esm',
-  platform: 'browser',
-  conditions: ['workerd', 'worker', 'browser'],
-  // Cloudflare builtins — available at runtime, must not be bundled
-  external: ['cloudflare:*', 'node:*', '__STATIC_CONTENT_MANIFEST'],
+  // 'node' platform auto-externalises all Node.js built-ins (fs, path,
+  // async_hooks, crypto, stream, etc.) which are available at runtime
+  // in Cloudflare Workers via the nodejs_compat flag.
+  platform: 'node',
+  // Cloudflare-specific package export conditions
+  conditions: ['workerd', 'worker', 'browser', 'module', 'require', 'default'],
+  external: [
+    'cloudflare:*',
+    '__STATIC_CONTENT_MANIFEST',
+  ],
+  plugins: [wasmStubPlugin],
   target: 'es2022',
   minify: false,
 }).then(() => {
