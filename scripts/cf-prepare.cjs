@@ -42,6 +42,14 @@ esbuild.build({
     'cloudflare:*',
     '__STATIC_CONTENT_MANIFEST',
   ],
+  // Next.js CJS modules (e.g. node-environment-extensions/node-crypto.js) call
+  // require('node:crypto') at runtime. In an ESM Cloudflare Worker there is no
+  // global require, so esbuild's __require shim throws "Dynamic require of X is
+  // not supported". Injecting createRequire makes require available so those
+  // shims resolve the Node built-ins that nodejs_compat provides.
+  banner: {
+    js: `import { createRequire as __createRequire } from 'node:module';\nconst require = __createRequire(import.meta.url);\n`,
+  },
   plugins: [wasmStubPlugin],
   target: 'es2022',
   minify: false,
