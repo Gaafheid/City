@@ -2,10 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateCityHighlights } from '@/lib/claude';
 import { validateAndFilterHighlights } from '@/lib/validateHighlights';
 
-// Simple in-process cache to avoid re-calling Claude for the same city
-const serverCache = new Map<string, { data: unknown; at: number }>();
-const SERVER_CACHE_TTL = 60 * 60 * 1000; // 1 hour
-
 export async function POST(req: NextRequest) {
   let city: string;
   try {
@@ -17,11 +13,6 @@ export async function POST(req: NextRequest) {
 
   if (!city) {
     return NextResponse.json({ error: 'City name is required.' }, { status: 400 });
-  }
-
-  const cacheHit = serverCache.get(city.toLowerCase());
-  if (cacheHit && Date.now() - cacheHit.at < SERVER_CACHE_TTL) {
-    return NextResponse.json({ data: cacheHit.data });
   }
 
   let raw: unknown;
@@ -46,8 +37,6 @@ export async function POST(req: NextRequest) {
     console.error('Validation error:', err);
     return NextResponse.json({ error: 'Highlight data validation failed. Please try again.' }, { status: 422 });
   }
-
-  serverCache.set(city.toLowerCase(), { data: validated, at: Date.now() });
 
   return NextResponse.json({ data: validated });
 }

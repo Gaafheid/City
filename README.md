@@ -33,12 +33,35 @@ A progressive web app (PWA) that generates city highlights powered by Claude AI 
 
 4. Open `http://localhost:3000`
 
-## Deployment (Vercel)
+## Deployment (Cloudflare Pages)
 
-1. Push to GitHub
-2. Import into Vercel
-3. Add `ANTHROPIC_API_KEY` as an environment variable
-4. Deploy — HTTPS is required for GPS and PWA installation
+Uses [OpenNext for Cloudflare](https://opennext.js.org/cloudflare) — the officially recommended adapter.
+
+### Via Cloudflare Pages dashboard (recommended)
+
+1. Push this repo to GitHub
+2. In [Cloudflare Pages](https://pages.cloudflare.com), create a new project linked to the repo
+3. Set build settings:
+   - **Build command**: `npm run cf:build`
+   - **Build output directory**: `.open-next/assets`
+   - **Compatibility flags**: `nodejs_compat`
+4. Add `ANTHROPIC_API_KEY` as an environment variable under Settings → Environment variables
+5. Deploy
+
+### Via CLI
+
+```bash
+npm run cf:build          # builds for Cloudflare Workers
+npx wrangler pages deploy # deploys to your Cloudflare account
+```
+
+Add `ANTHROPIC_API_KEY` in the Cloudflare dashboard under Workers & Pages → your project → Settings → Environment Variables.
+
+### Local preview
+
+```bash
+npm run cf:preview        # builds + runs locally via wrangler
+```
 
 ## Tech Stack
 
