@@ -24,7 +24,8 @@ export default function CitySearchForm() {
         value={city}
         onChange={(e) => setCity(e.target.value)}
         placeholder="e.g. Amsterdam, Rome, Kyoto…"
-        className="w-full px-5 py-4 rounded-2xl border border-gray-200 bg-white text-gray-900 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+        className="w-full px-5 py-4 rounded-2xl text-base focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-blue-400"
+        style={{ background: 'rgba(255,255,255,0.08)', color: 'white', border: '1px solid rgba(255,255,255,0.15)' }}
         disabled={isPending}
         autoCapitalize="words"
         autoComplete="off"
@@ -32,9 +33,10 @@ export default function CitySearchForm() {
       <button
         type="submit"
         disabled={!city.trim() || isPending}
-        className="w-full bg-blue-600 disabled:bg-blue-300 text-white font-semibold py-4 rounded-2xl text-base transition-colors"
+        className="w-full text-white font-semibold py-4 rounded-2xl text-base transition-all"
+        style={{ background: isPending || !city.trim() ? 'rgba(96,165,250,0.4)' : '#3b82f6' }}
       >
-        {isPending ? 'Loading…' : 'Find Highlights'}
+        {isPending ? 'Loading…' : 'Find Highlights →'}
       </button>
     </form>
   );
