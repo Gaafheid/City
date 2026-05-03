@@ -27,12 +27,16 @@ export function useHighlights(city: string): UseHighlightsResult {
     let cancelled = false;
 
     async function fetchHighlights(retries = 1): Promise<void> {
+      const abort = new AbortController();
+      const timer = setTimeout(() => abort.abort(), 28000);
       try {
         const res = await fetch('/api/highlights', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ city }),
+          signal: abort.signal,
         });
+        clearTimeout(timer);
 
         if (!res.ok) {
           const json = await res.json().catch(() => ({}));
@@ -48,8 +52,12 @@ export function useHighlights(city: string): UseHighlightsResult {
           setCachedHighlights(city, json.data);
         }
       } catch (err) {
+        clearTimeout(timer);
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Something went wrong.');
+          const msg = err instanceof Error && err.name === 'AbortError'
+            ? 'This city took too long to load. Please try again.'
+            : (err instanceof Error ? err.message : 'Something went wrong.');
+          setError(msg);
         }
       } finally {
         if (!cancelled) setLoading(false);
