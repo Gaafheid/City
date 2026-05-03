@@ -71,10 +71,11 @@ function LoadingScreen({ cityName }: { cityName: string }) {
 
 interface Props {
   cityName: string;
+  country: string;
 }
 
-export default function CityMapWrapper({ cityName }: Props) {
-  const { data, loading, error } = useHighlights(cityName);
+export default function CityMapWrapper({ cityName, country }: Props) {
+  const { data, loading, error } = useHighlights(cityName, country);
 
   if (loading) return <LoadingScreen cityName={cityName} />;
 

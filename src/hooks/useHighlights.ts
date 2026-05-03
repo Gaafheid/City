@@ -9,7 +9,7 @@ interface UseHighlightsResult {
   error: string | null;
 }
 
-export function useHighlights(city: string): UseHighlightsResult {
+export function useHighlights(city: string, country: string): UseHighlightsResult {
   const [data, setData] = useState<CityHighlights | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +17,7 @@ export function useHighlights(city: string): UseHighlightsResult {
   useEffect(() => {
     if (!city) return;
 
-    const cached = getCachedHighlights(city);
+    const cached = getCachedHighlights(city, country);
     if (cached) {
       setData(cached);
       setLoading(false);
@@ -33,7 +33,7 @@ export function useHighlights(city: string): UseHighlightsResult {
         const res = await fetch('/api/highlights', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ city }),
+          body: JSON.stringify({ city, country }),
           signal: abort.signal,
         });
         clearTimeout(timer);
@@ -49,7 +49,7 @@ export function useHighlights(city: string): UseHighlightsResult {
         const json = await res.json();
         if (!cancelled) {
           setData(json.data);
-          setCachedHighlights(city, json.data);
+          setCachedHighlights(city, country, json.data);
         }
       } catch (err) {
         clearTimeout(timer);
@@ -66,7 +66,7 @@ export function useHighlights(city: string): UseHighlightsResult {
 
     fetchHighlights();
     return () => { cancelled = true; };
-  }, [city]);
+  }, [city, country]);
 
   return { data, loading, error };
 }

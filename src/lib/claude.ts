@@ -57,7 +57,9 @@ const highlightsTool: Anthropic.Tool = {
   } as Anthropic.Tool['input_schema'],
 };
 
-export async function generateCityHighlights(city: string): Promise<unknown> {
+export async function generateCityHighlights(city: string, country: string): Promise<unknown> {
+  const location = country ? `${city}, ${country}` : city;
+
   const response = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 3500,
@@ -70,15 +72,15 @@ export async function generateCityHighlights(city: string): Promise<unknown> {
     messages: [
       {
         role: 'user',
-        content: `Generate exactly 8 highlights for a walking holiday in ${city}.
+        content: `Generate exactly 8 highlights for a walking holiday in ${location}.
 
 Requirements for each highlight:
 - Real, verifiable location with accurate GPS coordinates (WGS84 decimal degrees)
 - Mix of categories: monuments, museums, churches, viewpoints, markets, parks, restaurants, neighbourhoods
 - id: a URL-safe slug, e.g. "rijksmuseum"
-- shortDescription: 1-2 sentences, what makes it worth visiting
-- backgroundInfo: 2 paragraphs covering history and cultural significance
-- tips: one practical sentence — best time, entry, what to look out for
+- shortDescription: exactly 1 sentence, what makes it special
+- backgroundInfo: exactly 1 short paragraph (3-4 sentences) of cultural/historical context
+- tips: one practical sentence — best time, entry cost, what to look out for
 - address: street address or well-known location description
 - openingHours and entryFee where applicable
 

@@ -4,9 +4,11 @@ import { validateAndFilterHighlights } from '@/lib/validateHighlights';
 
 export async function POST(req: NextRequest) {
   let city: string;
+  let country: string;
   try {
     const body = await req.json();
     city = String(body.city ?? '').trim().slice(0, 100);
+    country = String(body.country ?? '').trim().slice(0, 100);
   } catch {
     return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
   }
@@ -17,7 +19,7 @@ export async function POST(req: NextRequest) {
 
   let raw: unknown;
   try {
-    raw = await generateCityHighlights(city);
+    raw = await generateCityHighlights(city, country);
   } catch (err) {
     console.error('Claude API error:', err);
     return NextResponse.json({ error: 'Failed to generate highlights. Please try again.' }, { status: 500 });
