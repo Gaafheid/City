@@ -7,13 +7,13 @@
     "build": "next build",
     "start": "next start",
     "cf:build": "opennextjs-cloudflare build",
-    "cf:preview": "opennextjs-cloudflare build && wrangler pages dev",
-    "cf:deploy": "opennextjs-cloudflare build && wrangler pages deploy"
+    "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",
     "maplibre-gl": "^5.23.0",
-    "next": "^16.2.4",
+    "next": "^15.5.15",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "zod": "^4.3.6"
@@ -24,6 +24,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "esbuild": "^0.28.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "wrangler": "^4.84.0"
