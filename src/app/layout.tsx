@@ -6,12 +6,12 @@ import SWRegister from '@/components/SWRegister';
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist' });
 
 export const metadata: Metadata = {
-  title: 'City Highlights',
-  description: 'Discover and navigate city highlights on your holiday.',
+  title: 'View the Town',
+  description: 'Type a city. Get 8 must-see highlights. Walk around — get the story when you arrive.',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
-    title: 'Highlights',
+    statusBarStyle: 'black-translucent',
+    title: 'View the Town',
   },
   other: {
     'apple-touch-icon': '/icons/apple-touch-icon.png',
@@ -23,7 +23,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#2563eb',
+  themeColor: '#020617',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -17,6 +17,8 @@ export default function CitySearchForm() {
     });
   }
 
+  const active = city.trim() && !isPending;
+
   return (
     <form onSubmit={handleSubmit} className="w-full flex flex-col gap-3">
       <input
@@ -24,17 +26,29 @@ export default function CitySearchForm() {
         value={city}
         onChange={(e) => setCity(e.target.value)}
         placeholder="e.g. Amsterdam, Rome, Kyoto…"
-        className="w-full px-5 py-4 rounded-2xl border border-gray-200 bg-white text-gray-900 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+        className="w-full px-5 py-4 rounded-2xl text-base focus:outline-none placeholder-slate-500 text-white transition-all"
+        style={{
+          background: 'rgba(15,23,42,0.8)',
+          border: city ? '1px solid rgba(34,211,238,0.4)' : '1px solid rgba(255,255,255,0.08)',
+          boxShadow: city ? '0 0 15px rgba(34,211,238,0.1)' : 'none',
+        }}
         disabled={isPending}
         autoCapitalize="words"
         autoComplete="off"
       />
       <button
         type="submit"
-        disabled={!city.trim() || isPending}
-        className="w-full bg-blue-600 disabled:bg-blue-300 text-white font-semibold py-4 rounded-2xl text-base transition-colors"
+        disabled={!active}
+        className="w-full text-white font-bold py-4 rounded-2xl text-base transition-all"
+        style={{
+          background: active
+            ? 'linear-gradient(to right, #22d3ee, #2dd4bf)'
+            : 'rgba(34,211,238,0.15)',
+          color: active ? '#020617' : 'rgba(255,255,255,0.3)',
+          boxShadow: active ? '0 0 20px rgba(34,211,238,0.3)' : 'none',
+        }}
       >
-        {isPending ? 'Loading…' : 'Find Highlights'}
+        {isPending ? 'Loading…' : 'Find Highlights →'}
       </button>
     </form>
   );

@@ -59,8 +59,8 @@ const highlightsTool: Anthropic.Tool = {
 
 export async function generateCityHighlights(city: string): Promise<unknown> {
   const response = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 8000,
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 3500,
     system:
       'You are a knowledgeable travel guide with deep expertise in urban tourism. ' +
       'When given a city name, provide accurate, opinionated highlights that a curious traveller on foot would genuinely want to visit. ' +
@@ -70,22 +70,22 @@ export async function generateCityHighlights(city: string): Promise<unknown> {
     messages: [
       {
         role: 'user',
-        content: `Generate exactly 12 highlights for a walking holiday in ${city}.
+        content: `Generate exactly 8 highlights for a walking holiday in ${city}.
 
 Requirements for each highlight:
 - Real, verifiable location with accurate GPS coordinates (WGS84 decimal degrees)
-- Mix of categories: monuments, museums, churches, viewpoints, markets, parks, and at least one neighbourhood worth wandering
+- Mix of categories: monuments, museums, churches, viewpoints, markets, parks, restaurants, neighbourhoods
 - id: a URL-safe slug, e.g. "rijksmuseum"
-- shortDescription: max 2 sentences, what makes it worth visiting
-- backgroundInfo: 3-4 rich paragraphs covering history, architecture, cultural significance, and interesting stories
-- tips: practical advice — opening hours, best time of day, what to look out for
+- shortDescription: 1-2 sentences, what makes it worth visiting
+- backgroundInfo: 2 paragraphs covering history and cultural significance
+- tips: one practical sentence — best time, entry, what to look out for
 - address: street address or well-known location description
 - openingHours and entryFee where applicable
 
 Important: coordinates must be the actual building/entrance location, NOT the city centre. The city field should be the canonical English name. Also provide centerCoordinates (lat/lng) as a good initial map viewport for the city.`,
       },
     ],
-  });
+  }, { timeout: 25000 });
 
   const toolUse = response.content.find((b) => b.type === 'tool_use');
   if (!toolUse || toolUse.type !== 'tool_use') {
