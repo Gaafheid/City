@@ -9,7 +9,11 @@ interface UseHighlightsResult {
   error: string | null;
 }
 
-export function useHighlights(city: string, country: string): UseHighlightsResult {
+export function useHighlights(
+  city: string,
+  country: string,
+  center?: { lat: number; lng: number }
+): UseHighlightsResult {
   const [data, setData] = useState<CityHighlights | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +37,7 @@ export function useHighlights(city: string, country: string): UseHighlightsResul
         const res = await fetch('/api/highlights', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ city, country }),
+          body: JSON.stringify({ city, country, lat: center?.lat, lng: center?.lng }),
           signal: abort.signal,
         });
         clearTimeout(timer);
@@ -66,7 +70,7 @@ export function useHighlights(city: string, country: string): UseHighlightsResul
 
     fetchHighlights();
     return () => { cancelled = true; };
-  }, [city, country]);
+  }, [city, country, center?.lat, center?.lng]);
 
   return { data, loading, error };
 }

@@ -5,10 +5,14 @@ import { validateAndFilterHighlights } from '@/lib/validateHighlights';
 export async function POST(req: NextRequest) {
   let city: string;
   let country: string;
+  let center: { lat: number; lng: number } | undefined;
   try {
     const body = await req.json();
     city = String(body.city ?? '').trim().slice(0, 100);
     country = String(body.country ?? '').trim().slice(0, 100);
+    const lat = parseFloat(body.lat);
+    const lng = parseFloat(body.lng);
+    if (isFinite(lat) && isFinite(lng)) center = { lat, lng };
   } catch {
     return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
   }
@@ -27,7 +31,7 @@ export async function POST(req: NextRequest) {
 
   let validated;
   try {
-    validated = validateAndFilterHighlights(raw);
+    validated = validateAndFilterHighlights(raw, center);
   } catch (err) {
     const msg = err instanceof Error ? err.message : '';
     if (msg === 'TOO_FEW_VALID_HIGHLIGHTS') {

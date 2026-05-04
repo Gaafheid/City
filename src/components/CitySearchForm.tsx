@@ -47,7 +47,7 @@ export default function CitySearchForm() {
     const slug = selected.name.toLowerCase().replace(/\s+/g, '-');
     startTransition(() => {
       router.push(
-        `/city/${slug}?name=${encodeURIComponent(selected.name)}&country=${encodeURIComponent(selected.country)}`
+        `/city/${slug}?name=${encodeURIComponent(selected.name)}&country=${encodeURIComponent(selected.country)}&lat=${selected.lat}&lng=${selected.lng}`
       );
     });
   }

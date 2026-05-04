@@ -41,11 +41,18 @@ function isValidCoordinate(
   return true;
 }
 
-export function validateAndFilterHighlights(raw: unknown): CityHighlights {
+export function validateAndFilterHighlights(
+  raw: unknown,
+  preferredCenter?: { lat: number; lng: number }
+): CityHighlights {
   const parsed = CityHighlightsSchema.parse(raw);
 
+  // Use the geocoder-verified center (from Photon) when available —
+  // Claude Haiku sometimes returns wrong centerCoordinates for smaller cities.
+  const center = preferredCenter ?? parsed.centerCoordinates;
+
   const filtered = parsed.highlights.filter((h) =>
-    isValidCoordinate(h.coordinates, parsed.centerCoordinates)
+    isValidCoordinate(h.coordinates, center)
   );
 
   if (filtered.length < 5) {
@@ -54,6 +61,7 @@ export function validateAndFilterHighlights(raw: unknown): CityHighlights {
 
   return {
     ...parsed,
+    centerCoordinates: center,
     highlights: filtered,
     generatedAt: Date.now(),
   };
