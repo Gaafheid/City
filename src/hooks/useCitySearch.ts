@@ -45,7 +45,7 @@ export function useCitySearch(query: string) {
       abortRef.current = abort;
 
       try {
-        const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(trimmed)}&limit=6&layer=city&layer=district`;
+        const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(trimmed)}&limit=6&layer=city&layer=district&lang=en`;
         const res = await fetch(url, { signal: abort.signal });
         if (!res.ok) throw new Error('fetch failed');
         const json = await res.json();
