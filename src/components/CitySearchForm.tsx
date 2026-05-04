@@ -9,7 +9,7 @@ export default function CitySearchForm() {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLFormElement>(null);
 
   const { suggestions, loading: searching } = useCitySearch(selected ? '' : query);
 
