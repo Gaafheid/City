@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateCityHighlights } from '@/lib/claude';
 import { validateAndFilterHighlights } from '@/lib/validateHighlights';
+import { trackSearch } from '@/lib/analytics';
 
 export async function POST(req: NextRequest) {
+  const t0 = Date.now();
   let city: string;
   let country: string;
   let center: { lat: number; lng: number } | undefined;
@@ -26,6 +28,7 @@ export async function POST(req: NextRequest) {
     raw = await generateCityHighlights(city, country);
   } catch (err) {
     console.error('Claude API error:', err);
+    trackSearch(city, country, 'error', Date.now() - t0);
     return NextResponse.json({ error: 'Failed to generate highlights. Please try again.' }, { status: 500 });
   }
 
@@ -34,6 +37,7 @@ export async function POST(req: NextRequest) {
     validated = validateAndFilterHighlights(raw, center);
   } catch (err) {
     const msg = err instanceof Error ? err.message : '';
+    trackSearch(city, country, 'error', Date.now() - t0);
     if (msg === 'TOO_FEW_VALID_HIGHLIGHTS') {
       return NextResponse.json(
         { error: 'Could not generate reliable highlights for this city. Please try again or try a different city.' },
@@ -44,5 +48,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Highlight data validation failed. Please try again.' }, { status: 422 });
   }
 
+  trackSearch(city, country, 'success', Date.now() - t0);
   return NextResponse.json({ data: validated });
 }

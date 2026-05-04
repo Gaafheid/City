@@ -6,5 +6,8 @@
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
-  }
+  },
+  "analytics_engine_datasets": [
+    { "binding": "ANALYTICS", "dataset": "viewthetown_events" }
+  ]
 }

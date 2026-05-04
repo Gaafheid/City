@@ -99,6 +99,14 @@ async function addCityBoundary(map: maplibregl.Map, city: string, country: strin
   }
 }
 
+function fireEvent(event: string, city: string, extra: string[]) {
+  fetch('/api/event', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ event, city, extra }),
+  }).catch(() => {});
+}
+
 interface MapViewProps {
   cityData: CityHighlights;
 }
@@ -142,7 +150,10 @@ export default function MapView({ cityData }: MapViewProps) {
         new maplibregl.Marker({ element: el, anchor: 'bottom' })
           .setLngLat([h.coordinates.lng, h.coordinates.lat])
           .addTo(map);
-        el.addEventListener('click', () => setSelectedHighlight(h));
+        el.addEventListener('click', () => {
+          setSelectedHighlight(h);
+          fireEvent('highlight_view', cityData.city, [h.name, h.category, 'tap']);
+        });
       });
 
       // Fit to highlights
@@ -230,7 +241,11 @@ export default function MapView({ cityData }: MapViewProps) {
       {nearbyHighlight && (
         <ProximityBanner
           highlight={nearbyHighlight}
-          onView={() => { setSelectedHighlight(nearbyHighlight); dismiss(nearbyHighlight.id); }}
+          onView={() => {
+            setSelectedHighlight(nearbyHighlight);
+            dismiss(nearbyHighlight.id);
+            fireEvent('highlight_view', cityData.city, [nearbyHighlight.name, nearbyHighlight.category, 'proximity']);
+          }}
           onDismiss={() => dismiss(nearbyHighlight.id)}
         />
       )}
