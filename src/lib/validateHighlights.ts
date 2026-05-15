@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { CityHighlights } from '@/types';
+import { pointInBoundary, type CityBoundary } from './geo';
 
 const CoordinatesSchema = z.object({
   lat: z.number(),
@@ -29,31 +30,47 @@ export const CityHighlightsSchema = z.object({
   highlights: z.array(HighlightSchema),
 });
 
-function isValidCoordinate(
-  coords: { lat: number; lng: number },
-  center: { lat: number; lng: number }
-): boolean {
+// Tight fallback bounding box (≈22 km) used when no polygon is available
+const FALLBACK_BOX_DEG = 0.2;
+
+function isCoordinateSane(coords: { lat: number; lng: number }): boolean {
   if (coords.lat === 0 && coords.lng === 0) return false;
   if (coords.lat < -90 || coords.lat > 90) return false;
   if (coords.lng < -180 || coords.lng > 180) return false;
-  if (Math.abs(coords.lat - center.lat) > 0.5) return false;
-  if (Math.abs(coords.lng - center.lng) > 0.5) return false;
   return true;
+}
+
+function isWithinBoundingBox(
+  coords: { lat: number; lng: number },
+  center: { lat: number; lng: number }
+): boolean {
+  return (
+    Math.abs(coords.lat - center.lat) <= FALLBACK_BOX_DEG &&
+    Math.abs(coords.lng - center.lng) <= FALLBACK_BOX_DEG
+  );
 }
 
 export function validateAndFilterHighlights(
   raw: unknown,
-  preferredCenter?: { lat: number; lng: number }
+  preferredCenter?: { lat: number; lng: number },
+  boundary?: CityBoundary | null
 ): CityHighlights {
   const parsed = CityHighlightsSchema.parse(raw);
 
-  // Use the geocoder-verified center (from Photon) when available —
-  // Claude Haiku sometimes returns wrong centerCoordinates for smaller cities.
+  // Photon geocoder center overrides Claude's (Haiku can give wrong coords)
   const center = preferredCenter ?? parsed.centerCoordinates;
 
-  const filtered = parsed.highlights.filter((h) =>
-    isValidCoordinate(h.coordinates, center)
-  );
+  const filtered = parsed.highlights.filter((h) => {
+    if (!isCoordinateSane(h.coordinates)) return false;
+
+    if (boundary) {
+      // Strict check: point must be inside the actual city boundary polygon
+      return pointInBoundary(h.coordinates.lng, h.coordinates.lat, boundary);
+    }
+
+    // Fallback: tight bounding box around the geocoder-verified city center
+    return isWithinBoundingBox(h.coordinates, center);
+  });
 
   if (filtered.length < 5) {
     throw new Error('TOO_FEW_VALID_HIGHLIGHTS');

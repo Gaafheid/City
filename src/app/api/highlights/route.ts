@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateCityHighlights } from '@/lib/claude';
 import { validateAndFilterHighlights } from '@/lib/validateHighlights';
+import { fetchCityBoundary } from '@/lib/geo';
 import { trackSearch } from '@/lib/analytics';
 
 export async function POST(req: NextRequest) {
@@ -23,18 +24,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'City name is required.' }, { status: 400 });
   }
 
-  let raw: unknown;
-  try {
-    raw = await generateCityHighlights(city, country);
-  } catch (err) {
-    console.error('Claude API error:', err);
+  // Fetch city boundary and generate highlights in parallel — boundary fetch
+  // adds no latency since Claude takes much longer.
+  const [raw, boundary] = await Promise.allSettled([
+    generateCityHighlights(city, country),
+    fetchCityBoundary(city, country),
+  ]);
+
+  if (raw.status === 'rejected') {
+    console.error('Claude API error:', raw.reason);
     trackSearch(city, country, 'error', Date.now() - t0);
     return NextResponse.json({ error: 'Failed to generate highlights. Please try again.' }, { status: 500 });
   }
 
+  const resolvedBoundary = boundary.status === 'fulfilled' ? boundary.value : null;
+
   let validated;
   try {
-    validated = validateAndFilterHighlights(raw, center);
+    validated = validateAndFilterHighlights(raw.value, center, resolvedBoundary);
   } catch (err) {
     const msg = err instanceof Error ? err.message : '';
     trackSearch(city, country, 'error', Date.now() - t0);
