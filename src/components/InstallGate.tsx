@@ -3,13 +3,16 @@ import { useState, useEffect, useRef, type MutableRefObject } from 'react';
 import CitySearchForm from './CitySearchForm';
 
 export default function InstallGate() {
-  const [mode, setMode] = useState<'loading' | 'standalone' | 'browser'>('loading');
+  // Default to 'browser' so the landing page renders on both server and client
+  // without a hydration mismatch. The effect switches to 'standalone' only if
+  // needed, causing a single quick re-render for installed PWA users.
+  const [standalone, setStandalone] = useState(false);
   const [platform, setPlatform] = useState<'ios' | 'android' | 'other'>('other');
   const [showApp, setShowApp] = useState(false);
   const installPromptRef = useRef<Event & { prompt: () => Promise<void> } | null>(null);
 
   useEffect(() => {
-    const standalone =
+    const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
       (navigator as unknown as { standalone?: boolean }).standalone === true;
 
@@ -17,7 +20,7 @@ export default function InstallGate() {
     if (/iPhone|iPad|iPod/.test(ua)) setPlatform('ios');
     else if (/Android/.test(ua)) setPlatform('android');
 
-    setMode(standalone ? 'standalone' : 'browser');
+    setStandalone(isStandalone);
 
     const handler = (e: Event) => {
       e.preventDefault();
@@ -27,8 +30,7 @@ export default function InstallGate() {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
-  if (mode === 'loading') return null;
-  if (mode === 'standalone' || showApp) return <AppShell />;
+  if (standalone || showApp) return <AppShell />;
 
   return <LandingPage platform={platform} installPrompt={installPromptRef} onSkip={() => setShowApp(true)} />;
 }

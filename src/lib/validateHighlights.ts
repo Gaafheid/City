@@ -30,8 +30,11 @@ export const CityHighlightsSchema = z.object({
   highlights: z.array(HighlightSchema),
 });
 
-// Tight fallback bounding box (≈22 km) used when no polygon is available
-const FALLBACK_BOX_DEG = 0.2;
+// Max distance (≈22 km) from the geocoder-verified city centre.
+// Applied even when a boundary polygon is available so that a large
+// municipality polygon (e.g. the full county) cannot let distant highlights
+// slip through.
+const MAX_DIST_DEG = 0.2;
 
 function isCoordinateSane(coords: { lat: number; lng: number }): boolean {
   if (coords.lat === 0 && coords.lng === 0) return false;
@@ -45,8 +48,8 @@ function isWithinBoundingBox(
   center: { lat: number; lng: number }
 ): boolean {
   return (
-    Math.abs(coords.lat - center.lat) <= FALLBACK_BOX_DEG &&
-    Math.abs(coords.lng - center.lng) <= FALLBACK_BOX_DEG
+    Math.abs(coords.lat - center.lat) <= MAX_DIST_DEG &&
+    Math.abs(coords.lng - center.lng) <= MAX_DIST_DEG
   );
 }
 
@@ -63,13 +66,16 @@ export function validateAndFilterHighlights(
   const filtered = parsed.highlights.filter((h) => {
     if (!isCoordinateSane(h.coordinates)) return false;
 
+    // Always check bounding box first — prevents distant highlights that happen
+    // to be inside a large municipality / county polygon from slipping through.
+    if (!isWithinBoundingBox(h.coordinates, center)) return false;
+
+    // If we also have a precise boundary polygon, require the point to be inside it.
     if (boundary) {
-      // Strict check: point must be inside the actual city boundary polygon
       return pointInBoundary(h.coordinates.lng, h.coordinates.lat, boundary);
     }
 
-    // Fallback: tight bounding box around the geocoder-verified city center
-    return isWithinBoundingBox(h.coordinates, center);
+    return true;
   });
 
   if (filtered.length < 5) {
