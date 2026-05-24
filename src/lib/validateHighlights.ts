@@ -30,11 +30,11 @@ export const CityHighlightsSchema = z.object({
   highlights: z.array(HighlightSchema),
 });
 
-// Max distance (≈22 km) from the geocoder-verified city centre.
+// Max distance (≈11 km) from the geocoder-verified city centre.
 // Applied even when a boundary polygon is available so that a large
 // municipality polygon (e.g. the full county) cannot let distant highlights
 // slip through.
-const MAX_DIST_DEG = 0.2;
+const MAX_DIST_DEG = 0.1;
 
 function isCoordinateSane(coords: { lat: number; lng: number }): boolean {
   if (coords.lat === 0 && coords.lng === 0) return false;
