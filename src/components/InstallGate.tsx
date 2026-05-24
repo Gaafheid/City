@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type MutableRefObject } from 'react';
 import CitySearchForm from './CitySearchForm';
 
 export default function InstallGate() {
@@ -69,7 +69,7 @@ function AppShell() {
 
 interface LandingProps {
   platform: 'ios' | 'android' | 'other';
-  installPrompt: React.MutableRefObject<(Event & { prompt: () => Promise<void> }) | null>;
+  installPrompt: MutableRefObject<(Event & { prompt: () => Promise<void> }) | null>;
   onSkip: () => void;
 }
 

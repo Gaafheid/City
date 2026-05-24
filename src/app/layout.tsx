@@ -1,9 +1,7 @@
 import type { Metadata, Viewport } from 'next';
-import { Geist } from 'next/font/google';
+import type { ReactNode } from 'react';
 import './globals.css';
 import SWRegister from '@/components/SWRegister';
-
-const geist = Geist({ subsets: ['latin'], variable: '--font-geist' });
 
 export const metadata: Metadata = {
   title: 'View the Town',
@@ -26,13 +24,13 @@ export const viewport: Viewport = {
   themeColor: '#020617',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${geist.variable} h-full`}>
+    <html lang="en" className="h-full">
       <head>
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
       </head>
-      <body className="h-full font-sans antialiased">
+      <body className="h-full antialiased">
         <SWRegister />
         {children}
       </body>
