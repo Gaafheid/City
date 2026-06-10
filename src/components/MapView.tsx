@@ -20,17 +20,66 @@ const CATEGORY_COLORS: Record<string, string> = {
   other:         '#6b7280',
 };
 
+const CATEGORY_EMOJIS: Record<string, string> = {
+  monument:      '🏛️',
+  museum:        '🖼️',
+  church:        '⛪',
+  viewpoint:     '🔭',
+  market:        '🛒',
+  park:          '🌳',
+  restaurant:    '🍴',
+  neighbourhood: '🏘️',
+  other:         '📍',
+};
+
+// Card-style marker: rounded dark card with category border + emoji, pointed tail below.
+// Total height = 44px card + 8px tail; anchor:'bottom' places the tail tip at the coordinate.
 function markerEl(category: string): HTMLDivElement {
-  const el = document.createElement('div');
-  el.style.cssText = `
-    width: 32px; height: 32px; border-radius: 50% 50% 50% 0;
-    background: ${CATEGORY_COLORS[category] ?? '#6b7280'};
-    transform: rotate(-45deg);
-    border: 2px solid white;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-    cursor: pointer;
-  `;
-  return el;
+  const color = CATEGORY_COLORS[category] ?? '#6b7280';
+  const emoji = CATEGORY_EMOJIS[category] ?? '📍';
+
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = [
+    'position:relative',
+    'width:44px',
+    'height:52px',
+    'cursor:pointer',
+    'filter:drop-shadow(0 3px 6px rgba(0,0,0,0.45))',
+  ].join(';');
+
+  const card = document.createElement('div');
+  card.style.cssText = [
+    'position:absolute',
+    'top:0;left:0',
+    'width:44px;height:44px',
+    'border-radius:10px',
+    'background:#0f172a',
+    `border:2.5px solid ${color}`,
+    'display:flex',
+    'align-items:center',
+    'justify-content:center',
+    'font-size:20px',
+    'line-height:1',
+    'box-sizing:border-box',
+    'user-select:none',
+  ].join(';');
+  card.textContent = emoji;
+
+  const tail = document.createElement('div');
+  tail.style.cssText = [
+    'position:absolute',
+    'bottom:0',
+    'left:50%',
+    'transform:translateX(-50%)',
+    'width:0;height:0',
+    'border-left:7px solid transparent',
+    'border-right:7px solid transparent',
+    `border-top:8px solid ${color}`,
+  ].join(';');
+
+  wrapper.appendChild(card);
+  wrapper.appendChild(tail);
+  return wrapper;
 }
 
 function userDotEl(): HTMLDivElement {
@@ -200,10 +249,9 @@ export default function MapView({ cityData }: MapViewProps) {
       >
         {categories.map((cat) => (
           <div key={cat} className="flex items-center gap-2 py-0.5">
-            <div
-              className="w-3 h-3 rounded-full flex-shrink-0"
-              style={{ background: CATEGORY_COLORS[cat] ?? '#6b7280' }}
-            />
+            <span className="text-sm flex-shrink-0" style={{ lineHeight: 1 }}>
+              {CATEGORY_EMOJIS[cat] ?? '📍'}
+            </span>
             <span className="text-xs text-slate-300 capitalize">{cat}</span>
           </div>
         ))}
