@@ -1,32 +1,18 @@
 {
-  "name": "city-highlights",
-  "version": "0.1.0",
+  "name": "betting-app",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "cf:build": "opennextjs-cloudflare build",
-    "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
-  },
-  "dependencies": {
-    "@anthropic-ai/sdk": "^0.90.0",
-    "maplibre-gl": "^5.23.0",
-    "next": "^15.5.15",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "zod": "^4.3.6"
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check"
   },
   "devDependencies": {
-    "@opennextjs/cloudflare": "^1.19.2",
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "esbuild": "^0.28.0",
-    "tailwindcss": "^4",
-    "typescript": "^5",
-    "wrangler": "^4.84.0"
+    "turbo": "^2.5.0",
+    "typescript": "^5"
   }
 }
