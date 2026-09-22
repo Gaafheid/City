@@ -4,7 +4,7 @@ A progressive web app (PWA) that generates city highlights powered by Claude AI 
 
 ## Features
 
-- **AI-generated highlights** — type any city and get 8 curated spots (monuments, museums, parks, viewpoints, etc.) with rich background info
+- **AI-generated highlights** — type a city and get up to 8 curated spots with names and coordinates grounded in nearby geotagged Wikipedia places when available
 - **Interactive map** — MapLibre GL + OpenFreeMap tiles, colour-coded pins by category
 - **Real-time GPS** — your blue dot moves as you walk
 - **Proximity alerts** — get notified when you're within 100m of a highlight

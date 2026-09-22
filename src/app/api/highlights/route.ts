@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateCityHighlights } from '@/lib/claude';
 import { validateAndFilterHighlights } from '@/lib/validateHighlights';
-import { fetchCityBoundary } from '@/lib/geo';
+import { fetchCityBoundary, pointInBoundary } from '@/lib/geo';
+import { fetchNearbyPlaces } from '@/lib/places';
 import { trackSearch } from '@/lib/analytics';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 
@@ -38,7 +39,8 @@ export async function POST(req: NextRequest) {
   const cache = typeof caches === 'undefined'
     ? undefined
     : (caches as CacheStorage & { default?: Cache }).default;
-  const cacheUrl = new URL('/api/highlights/cached', req.url);
+  const cacheUrl = new URL('https://viewthetown.com/api/highlights/cached');
+  cacheUrl.searchParams.set('v', '3');
   cacheUrl.searchParams.set('city', city.toLowerCase());
   cacheUrl.searchParams.set('country', country.toLowerCase());
   if (center) {
@@ -51,7 +53,7 @@ export async function POST(req: NextRequest) {
       const hit = await cache.match(cacheKey);
       if (hit) {
         trackSearch(city, country, 'cached', Date.now() - t0);
-        return NextResponse.json(await hit.json());
+        return NextResponse.json(await hit.json(), { headers: { 'X-Highlights-Cache': 'hit' } });
       }
     } catch (err) {
       console.warn('Highlight cache read failed:', err);
@@ -76,24 +78,26 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Fetch city boundary and generate highlights in parallel — boundary fetch
-  // adds no latency since Claude takes much longer.
-  const [raw, boundary] = await Promise.allSettled([
-    generateCityHighlights(city, country),
+  const [boundary, nearbyPlaces] = await Promise.all([
     fetchCityBoundary(city, country, AbortSignal.timeout(8000)),
+    center ? fetchNearbyPlaces(city, center, null) : Promise.resolve([]),
   ]);
+  const candidates = boundary
+    ? nearbyPlaces.filter((place) => pointInBoundary(place.coordinates.lng, place.coordinates.lat, boundary))
+    : nearbyPlaces;
 
-  if (raw.status === 'rejected') {
-    console.error('Claude API error:', raw.reason);
+  let raw: unknown;
+  try {
+    raw = await generateCityHighlights(city, country, candidates.length >= 5 ? candidates : []);
+  } catch (err) {
+    console.error('Claude API error:', err);
     trackSearch(city, country, 'error', Date.now() - t0);
     return NextResponse.json({ error: 'Failed to generate highlights. Please try again.' }, { status: 500 });
   }
 
-  const resolvedBoundary = boundary.status === 'fulfilled' ? boundary.value : null;
-
   let validated;
   try {
-    validated = validateAndFilterHighlights(raw.value, center, resolvedBoundary);
+    validated = validateAndFilterHighlights(raw, center, boundary);
   } catch (err) {
     const msg = err instanceof Error ? err.message : '';
     trackSearch(city, country, 'error', Date.now() - t0);
@@ -118,5 +122,5 @@ export async function POST(req: NextRequest) {
       console.warn('Highlight cache write failed:', err);
     }
   }
-  return NextResponse.json(result);
+  return NextResponse.json(result, { headers: { 'X-Highlights-Cache': cache ? 'miss' : 'unavailable' } });
 }
