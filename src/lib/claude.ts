@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import type { HighlightCategory } from '@/types';
 import type { PlaceCandidate } from './places';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -66,9 +67,16 @@ export async function generateCityHighlights(
   city: string,
   country: string,
   candidates: PlaceCandidate[] = [],
+  options: { categories?: HighlightCategory[]; excludeNames?: string[] } = {},
 ): Promise<unknown> {
   const location = country ? `${city}, ${country}` : city;
-  const count = candidates.length ? Math.min(8, candidates.length) : 8;
+  const count = options.categories?.length ? Math.min(8, options.categories.length * 4) : candidates.length ? Math.min(8, candidates.length) : 8;
+  const categoryInstruction = options.categories?.length
+    ? `Only use these requested categories: ${options.categories.join(', ')}.`
+    : 'Mix of categories: monuments, museums, churches, viewpoints, markets, parks, restaurants, neighbourhoods.';
+  const excludedInstruction = options.excludeNames?.length
+    ? `Do not return any of these places because the user already has them: ${JSON.stringify(options.excludeNames)}.`
+    : '';
   const grounding = candidates.length
     ? `Choose only from these verified nearby places. Use each title at most once, copy the title exactly, and use its supplied coordinates. Do not add any other location: ${JSON.stringify(candidates)}`
     : 'Use only real, verifiable locations with accurate GPS coordinates.';
@@ -88,10 +96,12 @@ export async function generateCityHighlights(
         content: `Generate exactly ${count} highlights for a walking holiday in ${location}.
 
 ${grounding}
+${categoryInstruction}
+${excludedInstruction}
 
 Requirements for each highlight:
 - Real, verifiable location with accurate GPS coordinates (WGS84 decimal degrees)
-- Mix of categories: monuments, museums, churches, viewpoints, markets, parks, restaurants, neighbourhoods
+- ${categoryInstruction}
 - id: a URL-safe slug, e.g. "rijksmuseum"
 - shortDescription: exactly 1 sentence, what makes it special
 - backgroundInfo: exactly 1 short paragraph (3-4 sentences) of cultural/historical context
