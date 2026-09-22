@@ -23,6 +23,7 @@
 
 # production
 /build
+/public/maplibre/
 
 # misc
 .DS_Store
