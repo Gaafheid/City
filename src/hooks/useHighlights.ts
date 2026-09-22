@@ -35,7 +35,7 @@ export function useHighlights(
       try {
         for (let attempt = 0; attempt < 2; attempt++) {
           controller = new AbortController();
-          const timer = setTimeout(() => controller?.abort(), 40000);
+          const timer = setTimeout(() => controller?.abort(), 50000);
           let res: Response;
           try {
             res = await fetch('/api/highlights', {
