@@ -30,15 +30,13 @@ A progressive web app (PWA) that generates city highlights powered by Claude AI 
 
 ## Deployment (Cloudflare Workers)
 
-The `main` branch deploys through GitHub Actions using OpenNext for Cloudflare.
+The `main` branch deploys through the Cloudflare Workers Builds integration connected to this GitHub repository. The repository also has a separate Cloudflare Pages integration; both report checks on pull requests.
 
-1. Create a Cloudflare API token with Workers deployment permissions.
-2. Add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in GitHub repository Settings > Secrets and variables > Actions.
-3. Set the Anthropic key once on the `city-highlights` Worker:
+1. Set the Anthropic key on the `city-highlights` Worker in the Cloudflare dashboard, or with an authenticated Wrangler session:
    ```bash
    npx wrangler secret put ANTHROPIC_API_KEY
    ```
-4. Push to `main` or merge a pull request. The workflow builds and deploys the Worker.
+2. Push to `main` or merge a pull request. Cloudflare builds and deploys the Worker.
 
 ### Manual deployment
 
