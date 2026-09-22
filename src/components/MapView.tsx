@@ -62,16 +62,6 @@ function markerEl(category: string): HTMLDivElement {
     'justify-content:center',
     'font-size:20px',
     'line-height:1',
-=======
-    'position:relative',
-    'width:18px',
-    'height:18px',
-    'cursor:pointer',
-    'border-radius:50%',
-    `background:${color}`,
-    'border:3px solid #0f172a',
-    'box-shadow:0 0 0 2px rgba(255,255,255,0.9), 0 2px 6px rgba(0,0,0,0.45)',
->>>>>>> origin/main
     'box-sizing:border-box',
     'filter:drop-shadow(0 3px 6px rgba(0,0,0,0.45))',
   ].join(';');
