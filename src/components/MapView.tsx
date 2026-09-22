@@ -32,53 +32,23 @@ const CATEGORY_EMOJIS: Record<string, string> = {
   other:         '📍',
 };
 
-// Card-style marker: rounded dark card with category border + emoji, pointed tail below.
-// Total height = 44px card + 8px tail; anchor:'bottom' places the tail tip at the coordinate.
+// Compact marker with a fixed footprint. The center of the dot is the coordinate.
 function markerEl(category: string): HTMLDivElement {
   const color = CATEGORY_COLORS[category] ?? '#6b7280';
-  const emoji = CATEGORY_EMOJIS[category] ?? '📍';
 
   const wrapper = document.createElement('div');
   wrapper.style.cssText = [
     'position:relative',
-    'width:44px',
-    'height:52px',
+    'width:18px',
+    'height:18px',
     'cursor:pointer',
-    'filter:drop-shadow(0 3px 6px rgba(0,0,0,0.45))',
-  ].join(';');
-
-  const card = document.createElement('div');
-  card.style.cssText = [
-    'position:absolute',
-    'top:0;left:0',
-    'width:44px;height:44px',
-    'border-radius:10px',
-    'background:#0f172a',
-    `border:2.5px solid ${color}`,
-    'display:flex',
-    'align-items:center',
-    'justify-content:center',
-    'font-size:20px',
-    'line-height:1',
+    'border-radius:50%',
+    `background:${color}`,
+    'border:3px solid #0f172a',
+    'box-shadow:0 0 0 2px rgba(255,255,255,0.9), 0 2px 6px rgba(0,0,0,0.45)',
     'box-sizing:border-box',
     'user-select:none',
   ].join(';');
-  card.textContent = emoji;
-
-  const tail = document.createElement('div');
-  tail.style.cssText = [
-    'position:absolute',
-    'bottom:0',
-    'left:50%',
-    'transform:translateX(-50%)',
-    'width:0;height:0',
-    'border-left:7px solid transparent',
-    'border-right:7px solid transparent',
-    `border-top:8px solid ${color}`,
-  ].join(';');
-
-  wrapper.appendChild(card);
-  wrapper.appendChild(tail);
   return wrapper;
 }
 
@@ -198,7 +168,9 @@ export default function MapView({ cityData }: MapViewProps) {
     // Markers do not depend on vector tiles finishing their load.
     cityData.highlights.forEach((h) => {
       const el = markerEl(h.category);
-      new maplibregl.Marker({ element: el, anchor: 'bottom' })
+      el.title = h.name;
+      el.setAttribute('aria-label', h.name);
+      new maplibregl.Marker({ element: el, anchor: 'center' })
         .setLngLat([h.coordinates.lng, h.coordinates.lat])
         .addTo(map);
       el.addEventListener('click', () => {
