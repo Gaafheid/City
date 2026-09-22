@@ -1,4 +1,4 @@
-const APP_SHELL_CACHE = 'app-shell-v1';
+const APP_SHELL_CACHE = 'app-shell-v2';
 const TILE_CACHE = 'map-tiles-v1';
 const TILE_MAX_AGE = 30 * 24 * 60 * 60 * 1000; // 30 days
 
@@ -22,7 +22,7 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Never cache API calls
+  // Let the browser handle other origins and API requests.
   if (url.pathname.startsWith('/api/')) return;
 
   // Map tiles — stale-while-revalidate
@@ -31,10 +31,28 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // App shell — cache first, fall back to network
-  event.respondWith(
-    caches.match(request).then((cached) => cached ?? fetch(request))
-  );
+  if (url.origin !== self.location.origin) return;
+
+  if (request.mode === 'navigate' && url.pathname === '/') {
+    event.respondWith(
+      fetch(request).then(async (response) => {
+        if (response.ok) {
+          try {
+            const cache = await caches.open(APP_SHELL_CACHE);
+            await cache.put(request, response.clone());
+          } catch {
+            // Serve the fresh response even if offline storage is unavailable.
+          }
+        }
+        return response;
+      }).catch(async () => (await caches.match(request)) || Response.error())
+    );
+    return;
+  }
+
+  if (url.pathname.startsWith('/icons/')) {
+    event.respondWith(caches.match(request).then((cached) => cached ?? fetch(request)));
+  }
 });
 
 async function tileStrategy(request) {

@@ -4,58 +4,47 @@ A progressive web app (PWA) that generates city highlights powered by Claude AI 
 
 ## Features
 
-- **AI-generated highlights** — type any city and get 12 curated spots (monuments, museums, parks, viewpoints, etc.) with rich background info
+- **AI-generated highlights** — type any city and get 8 curated spots (monuments, museums, parks, viewpoints, etc.) with rich background info
 - **Interactive map** — MapLibre GL + OpenFreeMap tiles, colour-coded pins by category
 - **Real-time GPS** — your blue dot moves as you walk
 - **Proximity alerts** — get notified when you're within 100m of a highlight
 - **Background info on arrival** — bottom sheet with history, tips, opening hours, and entry fees
 - **Apple Maps directions** — one tap to get walking directions
-- **30-day local cache** — generated highlights are cached per city, no repeated API calls
+- **Cached highlights** — results are cached in the browser for 30 days and at the Cloudflare edge for 7 days; uncached generation is limited to 8 requests per minute per IP and edge location
 - **Installable PWA** — add to iPhone Home Screen, works in standalone mode
 
 ## Setup
 
-1. Copy the env template:
+1. Create `.env.local`:
    ```bash
-   cp .env.local.example .env.local
+   printf 'ANTHROPIC_API_KEY=your-key-here\n' > .env.local
    ```
 
-2. Add your Anthropic API key to `.env.local`:
-   ```
-   ANTHROPIC_API_KEY=sk-ant-...
-   ```
-
-3. Install dependencies and start:
+2. Install dependencies and start:
    ```bash
    npm install
    npm run dev
    ```
 
-4. Open `http://localhost:3000`
+3. Open `http://localhost:3000`
 
-## Deployment (Cloudflare Pages)
+## Deployment (Cloudflare Workers)
 
-Uses [OpenNext for Cloudflare](https://opennext.js.org/cloudflare) — the officially recommended adapter.
+The `main` branch deploys through GitHub Actions using OpenNext for Cloudflare.
 
-### Via Cloudflare Pages dashboard (recommended)
+1. Create a Cloudflare API token with Workers deployment permissions.
+2. Add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in GitHub repository Settings > Secrets and variables > Actions.
+3. Set the Anthropic key once on the `city-highlights` Worker:
+   ```bash
+   npx wrangler secret put ANTHROPIC_API_KEY
+   ```
+4. Push to `main` or merge a pull request. The workflow builds and deploys the Worker.
 
-1. Push this repo to GitHub
-2. In [Cloudflare Pages](https://pages.cloudflare.com), create a new project linked to the repo
-3. Set build settings:
-   - **Build command**: `npm run cf:build`
-   - **Build output directory**: `.open-next/assets`
-   - **Compatibility flags**: `nodejs_compat`
-4. Add `ANTHROPIC_API_KEY` as an environment variable under Settings → Environment variables
-5. Deploy
-
-### Via CLI
+### Manual deployment
 
 ```bash
-npm run cf:build          # builds for Cloudflare Workers
-npx wrangler pages deploy # deploys to your Cloudflare account
+npm run cf:deploy
 ```
-
-Add `ANTHROPIC_API_KEY` in the Cloudflare dashboard under Workers & Pages → your project → Settings → Environment Variables.
 
 ### Local preview
 

@@ -87,7 +87,7 @@ Requirements for each highlight:
 Important: coordinates must be the actual building/entrance location, NOT the city centre. The city field should be the canonical English name. Also provide centerCoordinates (lat/lng) as a good initial map viewport for the city.`,
       },
     ],
-  }, { timeout: 25000 });
+  }, { timeout: 30000, maxRetries: 0 });
 
   const toolUse = response.content.find((b) => b.type === 'tool_use');
   if (!toolUse || toolUse.type !== 'tool_use') {
