@@ -177,6 +177,7 @@ export default function MapView({ cityData }: MapViewProps) {
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
 
+    maplibregl.setWorkerUrl('/maplibre/maplibre-gl-worker.mjs');
     const map = new maplibregl.Map({
       container: mapContainer.current,
       style: 'https://tiles.openfreemap.org/styles/liberty',
@@ -186,30 +187,31 @@ export default function MapView({ cityData }: MapViewProps) {
 
     mapRef.current = map;
 
-    map.on('load', () => {
+    map.once('style.load', () => {
       // Force all labels to English
       forceEnglishLabels(map);
 
       // Fetch and draw city boundary outline
       addCityBoundary(map, cityData.city, cityData.country);
+    });
 
-      // Add highlight markers
-      cityData.highlights.forEach((h) => {
-        const el = markerEl(h.category);
-        new maplibregl.Marker({ element: el, anchor: 'bottom' })
-          .setLngLat([h.coordinates.lng, h.coordinates.lat])
-          .addTo(map);
-        el.addEventListener('click', () => {
-          setSelectedHighlight(h);
-          fireEvent('highlight_view', cityData.city, [h.name, h.category, 'tap']);
-        });
+    // Markers do not depend on vector tiles finishing their load.
+    cityData.highlights.forEach((h) => {
+      const el = markerEl(h.category);
+      new maplibregl.Marker({ element: el, anchor: 'bottom' })
+        .setLngLat([h.coordinates.lng, h.coordinates.lat])
+        .addTo(map);
+      el.addEventListener('click', () => {
+        setSelectedHighlight(h);
+        fireEvent('highlight_view', cityData.city, [h.name, h.category, 'tap']);
       });
+    });
 
-      // Fit to highlights
+    if (cityData.highlights.length > 0) {
       const bounds = new maplibregl.LngLatBounds();
       cityData.highlights.forEach((h) => bounds.extend([h.coordinates.lng, h.coordinates.lat]));
       map.fitBounds(bounds, { padding: { top: 80, bottom: 160, left: 60, right: 60 }, maxZoom: 15 });
-    });
+    }
 
     return () => {
       map.remove();

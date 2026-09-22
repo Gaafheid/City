@@ -3,11 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/copy-maplibre-worker.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/copy-maplibre-worker.mjs",
     "build": "next build --webpack",
     "start": "next start",
+    "precf:build": "node scripts/copy-maplibre-worker.mjs",
     "cf:build": "opennextjs-cloudflare build",
+    "precf:preview": "node scripts/copy-maplibre-worker.mjs",
     "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "precf:deploy": "node scripts/copy-maplibre-worker.mjs",
     "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy -- --keep-vars"
   },
   "dependencies": {
