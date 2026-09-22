@@ -29,34 +29,39 @@ export function useHighlights(
     }
 
     let cancelled = false;
+    let controller: AbortController | null = null;
 
-    async function fetchHighlights(retries = 1): Promise<void> {
-      const abort = new AbortController();
-      const timer = setTimeout(() => abort.abort(), 28000);
+    async function fetchHighlights(): Promise<void> {
       try {
-        const res = await fetch('/api/highlights', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ city, country, lat: center?.lat, lng: center?.lng }),
-          signal: abort.signal,
-        });
-        clearTimeout(timer);
-
-        if (!res.ok) {
-          const json = await res.json().catch(() => ({}));
-          if (res.status === 422 && retries > 0) {
-            return fetchHighlights(retries - 1);
+        for (let attempt = 0; attempt < 2; attempt++) {
+          controller = new AbortController();
+          const timer = setTimeout(() => controller?.abort(), 40000);
+          let res: Response;
+          try {
+            res = await fetch('/api/highlights', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ city, country, lat: center?.lat, lng: center?.lng }),
+              signal: controller.signal,
+            });
+          } finally {
+            clearTimeout(timer);
           }
-          throw new Error(json.error ?? 'Failed to load highlights.');
-        }
 
-        const json = await res.json();
-        if (!cancelled) {
-          setData(json.data);
-          setCachedHighlights(city, country, json.data);
+          if (!res.ok) {
+            const json = await res.json().catch(() => ({}));
+            if (res.status === 422 && attempt === 0) continue;
+            throw new Error(json.error ?? 'Failed to load highlights.');
+          }
+
+          const json = await res.json();
+          if (!cancelled) {
+            setData(json.data);
+            setCachedHighlights(city, country, json.data);
+          }
+          return;
         }
       } catch (err) {
-        clearTimeout(timer);
         if (!cancelled) {
           const msg = err instanceof Error && err.name === 'AbortError'
             ? 'This city took too long to load. Please try again.'
@@ -69,7 +74,7 @@ export function useHighlights(
     }
 
     fetchHighlights();
-    return () => { cancelled = true; };
+    return () => { cancelled = true; controller?.abort(); };
   }, [city, country, center?.lat, center?.lng]);
 
   return { data, loading, error };

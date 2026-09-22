@@ -9,5 +9,12 @@
   },
   "analytics_engine_datasets": [
     { "binding": "ANALYTICS", "dataset": "viewthetown_events" }
+  ],
+  "ratelimits": [
+    {
+      "name": "HIGHLIGHTS_RATE_LIMIT",
+      "namespace_id": "942705120",
+      "simple": { "limit": 8, "period": 60 }
+    }
   ]
 }

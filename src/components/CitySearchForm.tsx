@@ -60,6 +60,7 @@ export default function CitySearchForm() {
       <div className="relative">
         <input
           type="text"
+          aria-label="Search for a city"
           value={query}
           onChange={(e) => handleInputChange(e.target.value)}
           onFocus={() => { if (suggestions.length > 0) setOpen(true); }}
