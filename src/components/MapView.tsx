@@ -32,24 +32,78 @@ const CATEGORY_EMOJIS: Record<string, string> = {
   other:         '📍',
 };
 
-// Compact marker with a fixed footprint. The center of the dot is the coordinate.
+const DOT_ZOOM_THRESHOLD = 12;
+
+// MapLibre positions this element with a transform. Keep its positioning absolute
+// and put the visual states in children so zooming cannot shift the coordinate.
 function markerEl(category: string): HTMLDivElement {
   const color = CATEGORY_COLORS[category] ?? '#6b7280';
+  const emoji = CATEGORY_EMOJIS[category] ?? '📍';
 
   const wrapper = document.createElement('div');
   wrapper.style.cssText = [
-    'position:relative',
-    'width:18px',
-    'height:18px',
+    'position:absolute',
+    'width:44px',
+    'height:52px',
     'cursor:pointer',
+    'user-select:none',
+  ].join(';');
+
+  const symbol = document.createElement('div');
+  symbol.style.cssText = [
+    'position:absolute',
+    'top:0;left:0',
+    'width:44px;height:44px',
+    'border-radius:10px',
+    'background:#0f172a',
+    `border:2.5px solid ${color}`,
+    'display:flex',
+    'align-items:center',
+    'justify-content:center',
+    'font-size:20px',
+    'line-height:1',
+    'box-sizing:border-box',
+    'filter:drop-shadow(0 3px 6px rgba(0,0,0,0.45))',
+  ].join(';');
+  symbol.textContent = emoji;
+
+  const tail = document.createElement('div');
+  tail.style.cssText = [
+    'position:absolute',
+    'bottom:0;left:50%',
+    'transform:translateX(-50%)',
+    'width:0;height:0',
+    'border-left:7px solid transparent',
+    'border-right:7px solid transparent',
+    `border-top:8px solid ${color}`,
+  ].join(';');
+
+  const dot = document.createElement('div');
+  dot.style.cssText = [
+    'position:absolute',
+    'top:17px;left:17px',
+    'width:18px;height:18px',
     'border-radius:50%',
     `background:${color}`,
     'border:3px solid #0f172a',
     'box-shadow:0 0 0 2px rgba(255,255,255,0.9), 0 2px 6px rgba(0,0,0,0.45)',
     'box-sizing:border-box',
-    'user-select:none',
+    'display:none',
   ].join(';');
+
+  wrapper.append(symbol, tail, dot);
+  wrapper.dataset.markerSymbol = 'true';
   return wrapper;
+}
+
+function setMarkerZoom(el: HTMLDivElement, zoom: number) {
+  const compact = zoom < DOT_ZOOM_THRESHOLD;
+  const symbol = el.children[0] as HTMLElement;
+  const tail = el.children[1] as HTMLElement;
+  const dot = el.children[2] as HTMLElement;
+  symbol.style.display = compact ? 'none' : 'flex';
+  tail.style.display = compact ? 'none' : 'block';
+  dot.style.display = compact ? 'block' : 'none';
 }
 
 function userDotEl(): HTMLDivElement {
@@ -173,10 +227,16 @@ export default function MapView({ cityData }: MapViewProps) {
       new maplibregl.Marker({ element: el, anchor: 'center' })
         .setLngLat([h.coordinates.lng, h.coordinates.lat])
         .addTo(map);
+      setMarkerZoom(el, map.getZoom());
       el.addEventListener('click', () => {
         setSelectedHighlight(h);
         fireEvent('highlight_view', cityData.city, [h.name, h.category, 'tap']);
       });
+    });
+
+    map.on('zoom', () => {
+      map.getContainer().querySelectorAll<HTMLDivElement>('[data-marker-symbol="true"]')
+        .forEach((el) => setMarkerZoom(el, map.getZoom()));
     });
 
     if (cityData.highlights.length > 0) {
