@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic';
 import { useHighlights } from '@/hooks/useHighlights';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import type { HighlightCategory } from '@/types';
 
 const MapView = dynamic(() => import('./MapView'), { ssr: false });
 
@@ -76,7 +77,9 @@ interface Props {
 }
 
 export default function CityMapWrapper({ cityName, country, center }: Props) {
-  const { data, loading, error } = useHighlights(cityName, country, center);
+  const { data, loading, error, loadingMore, moreError, loadMore } = useHighlights(cityName, country, center);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<HighlightCategory[]>([]);
 
   if (loading) return <LoadingScreen cityName={cityName} />;
 
@@ -105,6 +108,22 @@ export default function CityMapWrapper({ cityName, country, center }: Props) {
     );
   }
 
+  const categories = [...new Set(data.highlights.map((highlight) => highlight.category))] as HighlightCategory[];
+
+  function toggleCategory(category: HighlightCategory) {
+    setSelectedCategories((current) => current.includes(category)
+      ? current.filter((value) => value !== category)
+      : current.length < 2 ? [...current, category] : current);
+  }
+
+  async function handleLoadMore() {
+    const added = await loadMore(selectedCategories);
+    if (added) {
+      setPickerOpen(false);
+      setSelectedCategories([]);
+    }
+  }
+
   return (
     <div className="flex-1 relative">
       {/* Top bar */}
@@ -127,8 +146,81 @@ export default function CityMapWrapper({ cityName, country, center }: Props) {
           <h1 className="text-base font-bold text-white truncate">{data.city}</h1>
           <p className="text-xs text-slate-500">{data.highlights.length} highlights</p>
         </div>
+        <button
+          type="button"
+          aria-label="Load more highlights"
+          title="Load more highlights"
+          onClick={() => setPickerOpen(true)}
+          className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center text-lg text-white"
+          style={{ background: 'rgba(34,211,238,0.14)', border: '1px solid rgba(34,211,238,0.25)' }}
+        >
+          ↻
+        </button>
       </div>
-      <MapView cityData={data} />
+      <MapView key={data.highlights.map((highlight) => highlight.id).join('|')} cityData={data} />
+
+      {pickerOpen && (
+        <div className="absolute inset-0 z-20 flex items-start justify-center px-4 pt-20" style={{ background: 'rgba(2,6,23,0.35)' }}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="more-highlights-title"
+            className="w-full max-w-sm rounded-2xl p-5"
+            style={{ background: '#0f172a', border: '1px solid rgba(34,211,238,0.25)', boxShadow: '0 20px 50px rgba(0,0,0,0.4)' }}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 id="more-highlights-title" className="text-base font-bold text-white">Load more highlights</h2>
+                <p className="text-xs text-slate-400 mt-1">Choose up to two categories.</p>
+              </div>
+              <button
+                type="button"
+                aria-label="Close category picker"
+                onClick={() => setPickerOpen(false)}
+                className="text-slate-400 text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 mt-5">
+              {categories.map((category) => {
+                const selected = selectedCategories.includes(category);
+                const disabled = !selected && selectedCategories.length >= 2;
+                return (
+                  <button
+                    key={category}
+                    type="button"
+                    aria-pressed={selected}
+                    disabled={disabled || loadingMore}
+                    onClick={() => toggleCategory(category)}
+                    className="rounded-xl px-3 py-3 text-left text-sm capitalize transition-colors disabled:opacity-40"
+                    style={{
+                      color: selected ? '#020617' : '#cbd5e1',
+                      background: selected ? '#22d3ee' : 'rgba(148,163,184,0.12)',
+                      border: selected ? '1px solid #22d3ee' : '1px solid rgba(148,163,184,0.2)',
+                    }}
+                  >
+                    {category}
+                  </button>
+                );
+              })}
+            </div>
+
+            {moreError && <p className="text-sm text-rose-300 mt-4">{moreError}</p>}
+
+            <button
+              type="button"
+              disabled={selectedCategories.length === 0 || loadingMore}
+              onClick={handleLoadMore}
+              className="w-full mt-5 rounded-xl py-3 text-sm font-bold disabled:opacity-40"
+              style={{ background: '#22d3ee', color: '#020617' }}
+            >
+              {loadingMore ? 'Loading more…' : 'Load highlights'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

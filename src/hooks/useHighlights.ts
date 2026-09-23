@@ -1,12 +1,15 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { getCachedHighlights, setCachedHighlights } from '@/lib/storage';
-import type { CityHighlights } from '@/types';
+import type { CityHighlights, HighlightCategory } from '@/types';
 
 interface UseHighlightsResult {
   data: CityHighlights | null;
   loading: boolean;
   error: string | null;
+  loadingMore: boolean;
+  moreError: string | null;
+  loadMore: (categories: HighlightCategory[]) => Promise<boolean>;
 }
 
 export function useHighlights(
@@ -17,6 +20,8 @@ export function useHighlights(
   const [data, setData] = useState<CityHighlights | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [moreError, setMoreError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!city) return;
@@ -77,5 +82,41 @@ export function useHighlights(
     return () => { cancelled = true; controller?.abort(); };
   }, [city, country, center?.lat, center?.lng]);
 
-  return { data, loading, error };
+  async function loadMore(categories: HighlightCategory[]): Promise<boolean> {
+    if (!data || loadingMore || categories.length === 0 || categories.length > 2) return false;
+    setLoadingMore(true);
+    setMoreError(null);
+    try {
+      const res = await fetch('/api/highlights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          city,
+          country,
+          lat: center?.lat,
+          lng: center?.lng,
+          more: true,
+          categories,
+          excludeNames: data.highlights.map((highlight) => highlight.name),
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error ?? 'Could not load more highlights.');
+
+      const incoming = json.data as CityHighlights;
+      const existingNames = new Set(data.highlights.map((highlight) => highlight.name.toLowerCase()));
+      const additions = incoming.highlights.filter((highlight) => !existingNames.has(highlight.name.toLowerCase()));
+      const merged = { ...data, highlights: [...data.highlights, ...additions], generatedAt: Date.now() };
+      setData(merged);
+      setCachedHighlights(city, country, merged);
+      return additions.length > 0;
+    } catch (err) {
+      setMoreError(err instanceof Error ? err.message : 'Could not load more highlights.');
+      return false;
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
+  return { data, loading, error, loadingMore, moreError, loadMore };
 }
