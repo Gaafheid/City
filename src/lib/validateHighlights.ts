@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { CityHighlights } from '@/types';
-import { pointInBoundary, type CityBoundary } from './geo';
+import { haversineDistanceMeters, pointInBoundary, type CityBoundary } from './geo';
+import { MAX_TOURIST_RADIUS_METERS } from './places';
 
 const CoordinatesSchema = z.object({
   lat: z.number(),
@@ -30,12 +31,6 @@ export const CityHighlightsSchema = z.object({
   highlights: z.array(HighlightSchema),
 });
 
-// Max distance (≈11 km) from the geocoder-verified city centre.
-// Applied even when a boundary polygon is available so that a large
-// municipality polygon (e.g. the full county) cannot let distant highlights
-// slip through.
-const MAX_DIST_DEG = 0.1;
-
 function isCoordinateSane(coords: { lat: number; lng: number }): boolean {
   if (coords.lat === 0 && coords.lng === 0) return false;
   if (coords.lat < -90 || coords.lat > 90) return false;
@@ -43,14 +38,17 @@ function isCoordinateSane(coords: { lat: number; lng: number }): boolean {
   return true;
 }
 
-function isWithinBoundingBox(
+function isWithinTouristRadius(
   coords: { lat: number; lng: number },
   center: { lat: number; lng: number }
 ): boolean {
-  return (
-    Math.abs(coords.lat - center.lat) <= MAX_DIST_DEG &&
-    Math.abs(coords.lng - center.lng) <= MAX_DIST_DEG
-  );
+  return haversineDistanceMeters(center, coords) <= MAX_TOURIST_RADIUS_METERS;
+}
+
+function isTransportInfrastructure(highlight: { name: string; category: string }): boolean {
+  // Museums remain valid even when their name references railway history.
+  if (highlight.category === 'museum' && /museum/i.test(highlight.name)) return false;
+  return /\b(?:railway|train|bus|metro|tram) station\b|\b(?:airport|motorway|highway)\b/i.test(highlight.name);
 }
 
 export function validateAndFilterHighlights(
@@ -65,10 +63,11 @@ export function validateAndFilterHighlights(
 
   const filtered = parsed.highlights.filter((h) => {
     if (!isCoordinateSane(h.coordinates)) return false;
+    if (isTransportInfrastructure(h)) return false;
 
-    // Always check bounding box first — prevents distant highlights that happen
-    // to be inside a large municipality / county polygon from slipping through.
-    if (!isWithinBoundingBox(h.coordinates, center)) return false;
+    // Keep highlights visitor-relevant and close to the city centre even when
+    // the returned boundary is a large municipality or county polygon.
+    if (!isWithinTouristRadius(h.coordinates, center)) return false;
 
     // If we also have a precise boundary polygon, require the point to be inside it.
     if (boundary) {

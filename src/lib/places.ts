@@ -12,6 +12,12 @@ interface GeoSearchResult {
   lon: number;
 }
 
+export const MAX_TOURIST_RADIUS_METERS = 5000;
+
+function isTransportInfrastructure(name: string): boolean {
+  return /\b(?:railway|train|bus|metro|tram) station\b|\b(?:airport|motorway|highway)\b/i.test(name);
+}
+
 export async function fetchNearbyPlaces(
   city: string,
   center: Coordinates,
@@ -23,7 +29,7 @@ export async function fetchNearbyPlaces(
       action: 'query',
       list: 'geosearch',
       gscoord: `${center.lat}|${center.lng}`,
-      gsradius: '10000',
+      gsradius: String(MAX_TOURIST_RADIUS_METERS),
       gslimit: '100',
       format: 'json',
     }).toString();
@@ -37,7 +43,8 @@ export async function fetchNearbyPlaces(
     return (json.query?.geosearch ?? [])
       .filter((place) => Number.isFinite(place.lat) && Number.isFinite(place.lon))
       .filter((place) => place.title.toLowerCase() !== city.toLowerCase())
-      .filter((place) => haversineDistanceMeters(center, { lat: place.lat, lng: place.lon }) <= 8000)
+      .filter((place) => !isTransportInfrastructure(place.title))
+      .filter((place) => haversineDistanceMeters(center, { lat: place.lat, lng: place.lon }) <= MAX_TOURIST_RADIUS_METERS)
       .filter((place) => !boundary || pointInBoundary(place.lon, place.lat, boundary))
       .slice(0, 40)
       .map((place) => ({ name: place.title, coordinates: { lat: place.lat, lng: place.lon } }));
