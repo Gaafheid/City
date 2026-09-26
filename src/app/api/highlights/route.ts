@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     ? undefined
     : (caches as CacheStorage & { default?: Cache }).default;
   const cacheUrl = new URL('https://viewthetown.com/api/highlights/cached');
-  cacheUrl.searchParams.set('v', '3');
+  cacheUrl.searchParams.set('v', '4');
   cacheUrl.searchParams.set('city', city.toLowerCase());
   cacheUrl.searchParams.set('country', country.toLowerCase());
   if (center) {
