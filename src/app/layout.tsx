@@ -5,8 +5,26 @@ import './globals.css';
 import SWRegister from '@/components/SWRegister';
 
 export const metadata: Metadata = {
-  title: 'View the Town',
-  description: 'Type a city. Get 8 must-see highlights. Walk around — get the story when you arrive.',
+  metadataBase: new URL('https://viewthetown.com'),
+  title: {
+    default: 'View the Town — Explore cities through their stories',
+    template: '%s | View the Town',
+  },
+  description: 'Discover a city through its essential places and the stories behind them. Plan a walk, then explore at your own pace.',
+  alternates: { canonical: '/' },
+  robots: { index: true, follow: true },
+  openGraph: {
+    type: 'website',
+    url: 'https://viewthetown.com',
+    siteName: 'View the Town',
+    title: 'View the Town — Explore cities through their stories',
+    description: 'Discover a city through its essential places and the stories behind them.',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'View the Town — Explore cities through their stories',
+    description: 'Discover a city through its essential places and the stories behind them.',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
