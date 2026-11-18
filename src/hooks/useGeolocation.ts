@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
 export interface GeolocationState {
   position: GeolocationPosition | null;
@@ -14,6 +14,9 @@ export function useGeolocation() {
     isWatching: false,
   });
   const watchId = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current);
+  }, []);
 
   const start = useCallback(() => {
     if (!navigator.geolocation) {
@@ -25,6 +28,7 @@ export function useGeolocation() {
     }
 
     setState((s) => ({ ...s, isWatching: true, error: null }));
+    if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current);
 
     watchId.current = navigator.geolocation.watchPosition(
       (pos) => setState((s) => ({ ...s, position: pos, error: null })),

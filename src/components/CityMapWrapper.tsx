@@ -157,7 +157,7 @@ export default function CityMapWrapper({ cityName, country, center }: Props) {
           ↻
         </button>
       </div>
-      <MapView key={data.highlights.map((highlight) => highlight.id).join('|')} cityData={data} />
+      <MapView key={JSON.stringify([data.city, data.country])} cityData={data} />
 
       {pickerOpen && (
         <div className="absolute inset-0 z-20 flex items-start justify-center px-4 pt-20" style={{ background: 'rgba(2,6,23,0.35)' }}>

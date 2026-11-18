@@ -227,20 +227,6 @@ export default function MapView({ cityData }: MapViewProps) {
       addCityBoundary(map, cityData.city, cityData.country);
     });
 
-    // Markers do not depend on vector tiles finishing their load.
-    cityData.highlights.forEach((h) => {
-      const el = markerEl(h.category);
-      el.title = h.name;
-      el.setAttribute('aria-label', h.name);
-      new maplibregl.Marker({ element: el, anchor: 'center' })
-        .setLngLat([h.coordinates.lng, h.coordinates.lat])
-        .addTo(map);
-      setMarkerZoom(el, map.getZoom());
-      el.addEventListener('click', () => {
-        setSelectedHighlight(h);
-        fireEvent('highlight_view', cityData.city, [h.name, h.category, 'tap']);
-      });
-    });
 
     map.on('zoom', () => {
       map.getContainer().querySelectorAll<HTMLDivElement>('[data-marker-symbol="true"]')
@@ -259,6 +245,27 @@ export default function MapView({ cityData }: MapViewProps) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    // Markers do not depend on vector tiles finishing their load.
+    const markers = cityData.highlights.map((h) => {
+      const el = markerEl(h.category);
+      el.title = h.name;
+      el.setAttribute('aria-label', h.name);
+      const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+        .setLngLat([h.coordinates.lng, h.coordinates.lat])
+        .addTo(map);
+      setMarkerZoom(el, map.getZoom());
+      el.addEventListener('click', () => {
+        setSelectedHighlight(h);
+        fireEvent('highlight_view', cityData.city, [h.name, h.category, 'tap']);
+      });
+      return marker;
+    });
+    return () => markers.forEach(marker => marker.remove());
+  }, [cityData]);
 
   // Update user position dot
   useEffect(() => {
