@@ -54,7 +54,8 @@ function isTransportInfrastructure(highlight: { name: string; category: string }
 export function validateAndFilterHighlights(
   raw: unknown,
   preferredCenter?: { lat: number; lng: number },
-  boundary?: CityBoundary | null
+  boundary?: CityBoundary | null,
+  minimum = 5
 ): CityHighlights {
   const parsed = CityHighlightsSchema.parse(raw);
 
@@ -77,7 +78,7 @@ export function validateAndFilterHighlights(
     return true;
   });
 
-  if (filtered.length < 5) {
+  if (filtered.length < minimum) {
     throw new Error('TOO_FEW_VALID_HIGHLIGHTS');
   }
 
