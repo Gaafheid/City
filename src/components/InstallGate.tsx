@@ -8,7 +8,6 @@ export default function InstallGate() {
   // needed, causing a single quick re-render for installed PWA users.
   const [standalone, setStandalone] = useState(false);
   const [platform, setPlatform] = useState<'ios' | 'android' | 'other'>('other');
-  const [showApp, setShowApp] = useState(false);
   const installPromptRef = useRef<Event & { prompt: () => Promise<void> } | null>(null);
 
   useEffect(() => {
@@ -30,9 +29,9 @@ export default function InstallGate() {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
-  if (standalone || showApp) return <AppShell />;
+  if (standalone) return <AppShell />;
 
-  return <LandingPage platform={platform} installPrompt={installPromptRef} onSkip={() => setShowApp(true)} />;
+  return <LandingPage platform={platform} installPrompt={installPromptRef} />;
 }
 
 function AppShell() {
@@ -72,10 +71,9 @@ function AppShell() {
 interface LandingProps {
   platform: 'ios' | 'android' | 'other';
   installPrompt: MutableRefObject<(Event & { prompt: () => Promise<void> }) | null>;
-  onSkip: () => void;
 }
 
-function LandingPage({ platform, installPrompt, onSkip }: LandingProps) {
+function LandingPage({ platform, installPrompt }: LandingProps) {
   const [showIOSHint, setShowIOSHint] = useState(false);
 
   async function handleInstallClick() {
@@ -116,10 +114,12 @@ function LandingPage({ platform, installPrompt, onSkip }: LandingProps) {
           </p>
         </div>
 
+        <CitySearchForm />
+
         {/* Features */}
         <div className="w-full flex flex-col gap-3">
           {[
-            { icon: '🔍', title: 'Type any city', desc: 'AI picks 8 must-see highlights in seconds' },
+            { icon: '🔍', title: 'Choose a town', desc: 'Discover highlights around its centre' },
             { icon: '🗺️', title: 'See them on a map', desc: 'Interactive map with colour-coded pins' },
             { icon: '📍', title: 'Walk up — get the story', desc: 'Background info appears automatically when you arrive' },
           ].map(({ icon, title, desc }) => (
@@ -151,12 +151,6 @@ function LandingPage({ platform, installPrompt, onSkip }: LandingProps) {
             {platform === 'ios' ? '📲 Add to Home Screen' : '📲 Install App'}
           </button>
 
-          <button
-            onClick={onSkip}
-            className="w-full py-3 text-sm font-medium text-slate-500"
-          >
-            Use in browser instead →
-          </button>
         </div>
 
         {/* iOS step-by-step hint */}

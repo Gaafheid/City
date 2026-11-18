@@ -6,6 +6,8 @@ import type { CityHighlights, Highlight, Coordinates } from '@/types';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useProximity } from '@/hooks/useProximity';
 import HighlightSheet from './HighlightSheet';
+import { readVisit, visitKey } from '@/lib/visits';
+import { haversineDistanceMeters } from '@/lib/geo';
 import ProximityBanner from './ProximityBanner';
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -191,12 +193,18 @@ export default function MapView({ cityData }: MapViewProps) {
   const [selectedHighlight, setSelectedHighlight] = useState<Highlight | null>(null);
 
   const geo = useGeolocation();
+  const [showStart, setShowStart] = useState(true);
+  const [, refreshVisits] = useState(0);
+  const placeKey = (name: string) => visitKey(cityData.city, cityData.country, name);
 
   const userCoords: Coordinates | null = geo.position
     ? { lat: geo.position.coords.latitude, lng: geo.position.coords.longitude }
     : null;
 
   const { nearbyHighlight, dismiss } = useProximity(userCoords, cityData.highlights);
+  const origin = userCoords ?? cityData.centerCoordinates;
+  const firstStop = showStart ? cityData.highlights.filter(h => !readVisit(placeKey(h.name)))
+    .sort((a,b) => haversineDistanceMeters(origin, a.coordinates) - haversineDistanceMeters(origin, b.coordinates))[0] : undefined;
 
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
@@ -271,6 +279,13 @@ export default function MapView({ cityData }: MapViewProps) {
   return (
     <div className="relative w-full h-full">
       <div ref={mapContainer} className="w-full h-full" />
+      {firstStop && <aside className="absolute top-20 left-3 right-3 max-w-sm rounded-lg bg-slate-950/95 p-3 text-white shadow">
+        <button aria-label="Dismiss starting point" className="float-right px-2" onClick={() => setShowStart(false)}>×</button>
+        <p className="text-xs text-cyan-300">Start here · {userCoords ? 'Near you' : 'Near the town centre'}</p>
+        <button className="text-left font-semibold underline" onClick={() => setSelectedHighlight(firstStop)}>{firstStop.name}</button>
+        <p className="text-xs text-slate-300">{firstStop.shortDescription}</p>
+        {!userCoords && <button className="mt-2 text-xs text-cyan-300" disabled={geo.isWatching} onClick={geo.start}>{geo.isWatching ? 'Finding your location…' : 'Use my location'}</button>}
+      </aside>}
 
       {/* Category legend — dark themed */}
       <div
@@ -335,6 +350,8 @@ export default function MapView({ cityData }: MapViewProps) {
       {selectedHighlight && (
         <HighlightSheet
           highlight={selectedHighlight}
+          place={placeKey(selectedHighlight.name)}
+          onVisit={() => refreshVisits(n => n + 1)}
           onClose={() => setSelectedHighlight(null)}
         />
       )}

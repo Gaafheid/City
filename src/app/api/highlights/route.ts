@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
 
   let validated;
   try {
-    validated = validateAndFilterHighlights(raw, center, boundary);
+    validated = validateAndFilterHighlights(raw, center, boundary, isMoreRequest ? 1 : 5);
   } catch (err) {
     const msg = err instanceof Error ? err.message : '';
     trackSearch(city, country, 'error', Date.now() - t0);

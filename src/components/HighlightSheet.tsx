@@ -1,9 +1,12 @@
 'use client';
 import type { Highlight } from '@/types';
+import VisitFeedback from './VisitFeedback';
 
 interface Props {
   highlight: Highlight;
   onClose: () => void;
+  place: string;
+  onVisit: () => void;
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -18,7 +21,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   other: 'Point of Interest',
 };
 
-export default function HighlightSheet({ highlight, onClose }: Props) {
+export default function HighlightSheet({ highlight, onClose, place, onVisit }: Props) {
   const mapsUrl = `maps://maps.apple.com/?daddr=${highlight.coordinates.lat},${highlight.coordinates.lng}&dirflg=w`;
   const fallbackMapsUrl = `https://maps.apple.com/?daddr=${highlight.coordinates.lat},${highlight.coordinates.lng}&dirflg=w`;
 
@@ -79,6 +82,7 @@ export default function HighlightSheet({ highlight, onClose }: Props) {
             {highlight.shortDescription}
           </p>
 
+          <VisitFeedback key={place} place={place} onVisit={onVisit} />
           {(highlight.openingHours || highlight.entryFee) && (
             <div className="flex gap-3 mb-4">
               {highlight.openingHours && (
